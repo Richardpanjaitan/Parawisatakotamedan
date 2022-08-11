@@ -1,0 +1,117 @@
+---
+title: "Garch"
+output: pdf_document
+date: '2022-06-20'
+---
+
+# packages yang digunakan
+```{r}
+library(xts)
+library(lmtest)
+library(aTSA)
+library(rmgarch)
+library(rugarch)
+library(TSA)
+library(forecast)
+```
+
+
+# menghapus variabel tanggal
+```{r}
+Parawisata1 = Parawisata[,c(1)]
+```
+# menghapus variabel tanggal
+```{r}
+Parawisata1 = Parawisata_test[,c(1)]
+```
+
+# membuat objek timeseries
+```{r}
+Dates = seq(as.Date("2016-01-01"), as.Date("2021-12-31"),"day")
+pariwisata = xts(Parawisata1, order.by = Dates)
+
+```
+# membuat objek timeseries
+```{r}
+Dates = seq(as.Date("2021-10-11"), as.Date("2021-12-31"),"day") 
+pariwisata2 = xts(Parawisata2, order.by = Dates)
+
+```
+# menghapus data kosong
+```{r}
+Parawisata10 <- na.omit(pariwisata)
+```
+# mencari model arima 
+```{r}
+auto.arima(Parawisata10 , trace = F)
+```
+
+# melakukan coeftest
+```{r}
+Parawisata16 = arima(Parawisata10, order = c(2,1,3))
+coeftest(Parawisata16)
+```
+# 	Pengujian Efek Heteroskedastisitas
+```{r}
+arch.test(Parawisata16)
+```
+# Melakukan test ACF dan PACF
+```{r}
+par(mfrow=c(1,2))
+acf(Parawisata10, main=" ACF ")
+pacf(Parawisata10, main=" PACF ")
+```
+
+# estimasi model garch
+```{r}
+m.11 = garch(Parawisata10,order=c(1,1),trace = TRUE)
+summary(m.11)
+```
+# estimasi model prediksi
+```{r}
+garch10 = garchFit(~ arma(2,1)+garch(1,1), data = Parawisata10 , trace=F)
+summary(garch10)
+```
+# estimasi model prediksi
+```{r}
+garch10 = garchFit(~ arma(2,3)+garch(1,1), data = Parawisata10 , trace=F)
+summary(garch10)
+```
+
+# melakukan prediksi
+```{r}
+prediksi = predict(garch10, n.ahead= 1826)
+tail(prediksi)
+summary(prediksi)
+```
+# memindahkan hasil prediksi ke dataset
+```{r}
+addmean = prediksi$meanForecast
+Dates1 = seq(as.Date("2022-01-01"), as.Date("2026-12-31"), "day") 
+meandf = xts(addmean ,order.by = Dates1)
+parawisata_final = rbind(pariwisata , meandf)
+tail(parawisata_final)
+```
+# visualisasi hasil prediksi
+```{r}
+plot(meandf)
+```
+# membuat variabel nama untuk variabel Tanggal
+```{r}
+datapredik = data.frame(Tanggal =index(parawisata_final), coredata(parawisata_final))
+```
+# sampel data untuk akurasi model
+```{r}
+bdm_test=ts(pariwisata2[365:400],frequency = 365,start=c(2021,11))
+```
+# akurasi model
+```{r}
+akurasi <- accuracy(prediksi$meanForecast , bdm_test)
+akurasi
+```
+
+
+
+
+
+
