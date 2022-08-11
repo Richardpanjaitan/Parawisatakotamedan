@@ -68,24 +68,30 @@ glimpse(DataModel)
 model_ts <- prophet(yearly_seasonality = TRUE, daily.seasonality = TRUE, seasonality_prior_scale=0.05) %>% 
   fit.prophet(DataModel)
 ```
+# Periode prediksi untuk 5 tahun kedepan
 ```{r}
 future_ts <- make_future_dataframe(model_ts, periods = 1826, freq = "day")
 tail(future_ts)
 ```
+# Visualisasi hasil peralaman untuk 5 tahun kedepan
 ```{r}
 forecast_ts <- predict(model_ts, future_ts)
 plot(model_ts, forecast_ts)
 ```
+# Visualisasi komponen model dan forecast
 ```{r}
 prophet_plot_components(model_ts , forecast_ts)
 ```
+# Untuk melihat nilai ds, trend, weekly, yearly, yha
 ```{r}
 head(forecast_ts[c('ds', 'trend', 'weekly', 'yhat')])
 ```
+# changepoint dengan threshold
 ```{r}
 plot(model_ts, forecast_ts) + 
   add_changepoints_to_plot(model_ts, threshold = 0)
 ```
+# Membuat Dataframe model efek holiday
 holiday_newyear <- 
   data.frame( 
     holiday = "New Year's Day", 
@@ -95,8 +101,7 @@ holiday_newyear <-
   ) 
 holiday_newyear
 ```
-
-
+# membuat model dan prediksi 5 tahun kedepan model holiday
 ```{r}
 model_ts_holiday <- prophet(holidays = holiday_newyear) %>% 
    add_seasonality(name = "monthly", period = 30.5, fourier.order = 12) %>%
@@ -105,13 +110,17 @@ future_ts_holiday <- make_future_dataframe(model_ts_holiday, periods = 1826)
 forecast_ts_holiday <- predict(model_ts_holiday, future_ts_holiday) 
 plot(model_ts_holiday, forecast_ts_holiday)
 ```
+# Visualisasi komponen model dan forecast
 ```{r}
 prophet_plot_components(model_ts_holiday , forecast_ts_holiday)
 ```
+# changepoint dengan threshold model holiday
 ```{r}
 plot(model_ts_holiday, forecast_ts_holiday) + 
   add_changepoints_to_plot(model_ts_holiday, threshold = 0)
 ```
+
+# set data untuk model evaluation
 ```{r}
 set_datetest <- dmy("01-01-2020") 
  setdatatest <- Parawisata1 %>% 
@@ -119,7 +128,7 @@ set_datetest <- dmy("01-01-2020")
     Tanggal > set_datetest 
   ) 
 ```
-
+# Model forecast evaluation
 ```{r}
 cutoff <- dmy("01-10-2019") 
 train <- setdatatest %>% 
@@ -142,7 +151,7 @@ ggplot(setdatatest, aes(x=Tanggal, y=JumlahPengunjung)) +
   geom_point(data = train_indo_case, aes(x=ds, y=y)) + 
   geom_point(data = test_indo_case, aes(x=ds, y=y), color="tomato3")
 ```
-
+#Model final
 ```{r}
 model_final <- prophet(changepoint.prior.scale = 0.05 , daily.seasonality = TRUE) %>%
   fit.prophet(train) 
@@ -155,6 +164,7 @@ plot(model_final , forecast_final) +
   geom_point(data = test %>% 
                mutate(ds = as.POSIXct(ds)), aes(x=ds, y=y), color="tomato3")
 ```
+# Menentukan nilai MAPE
 ```{r}
 df.cv_wisata <- cross_validation(model_final, initial = 30, period = 30, horizon = 365, units = 'days')
 head(df.cv_wisata)
@@ -172,6 +182,7 @@ mape <- function(y, yhat){
 }
 mape(df.cv_wisata$y,df.cv_wisata$yhat)
 ```
+# Visualisasi nilai MAPE
 ```{r}
 plot_cross_validation_metric(df.cv_wisata, metric = 'mape')
 ```
